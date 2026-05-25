@@ -1,134 +1,96 @@
-// ── NAV ──
-const nav = document.getElementById('mainNav');
-window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 60));
+ // CURSOR
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  let mx = 0, my = 0, rx = 0, ry = 0;
 
-// ── HAMBURGER ──
-const ham = document.getElementById('ham');
-const mob = document.getElementById('mobMenu');
-ham.addEventListener('click', () => { ham.classList.toggle('open'); mob.classList.toggle('open'); });
-document.querySelectorAll('.mob-link').forEach(l => l.addEventListener('click', () => { ham.classList.remove('open'); mob.classList.remove('open'); }));
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    cursor.style.left = mx + 'px';
+    cursor.style.top = my + 'px';
+  });
 
-// ── REVEAL ──
-const io = new IntersectionObserver(entries => {
-  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
-}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
-document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+  function animRing() {
+    rx += (mx - rx) * 0.12;
+    ry += (my - ry) * 0.12;
+    ring.style.left = rx + 'px';
+    ring.style.top = ry + 'px';
+    requestAnimationFrame(animRing);
+  }
+  animRing();
 
-// ── COUNTER ──
-function animCount(el) {
-  const target = +el.dataset.count;
-  const suffix = el.dataset.suffix || '';
-  let start = null;
-  const dur = 1800;
-  const step = ts => {
-    if (!start) start = ts;
-    const p = Math.min((ts - start) / dur, 1);
-    const ease = 1 - Math.pow(1 - p, 3);
-    el.textContent = Math.floor(ease * target) + suffix;
-    if (p < 1) requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
-}
-const cio = new IntersectionObserver(entries => {
-  entries.forEach(e => { if (e.isIntersecting) { animCount(e.target); cio.unobserve(e.target); } });
-}, { threshold: 0.5 });
-document.querySelectorAll('[data-count]').forEach(el => cio.observe(el));
+  document.querySelectorAll('a, button, .service-card, .proj, .tech-pill, .process-step').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      ring.style.width = '56px';
+      ring.style.height = '56px';
+      ring.style.borderColor = 'rgba(201,168,76,0.8)';
+    });
+    el.addEventListener('mouseleave', () => {
+      ring.style.width = '36px';
+      ring.style.height = '36px';
+      ring.style.borderColor = 'rgba(201,168,76,0.5)';
+    });
+  });
 
-// ── QCM ──
-// ⚠️ Tes credentials Supabase configurés
-const SUPABASE_URL = "https://ruaoahmoenjsudrrtprv.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_F2QLHpzk0WLBh_lMXYjbvw_l3_2uS5k";
+  // HAMBURGER
+  const ham = document.getElementById('hamburger');
+  const mob = document.getElementById('mobileMenu');
+  ham.addEventListener('click', () => {
+    ham.classList.toggle('open');
+    mob.classList.toggle('open');
+  });
+  document.querySelectorAll('.mobile-link').forEach(l => {
+    l.addEventListener('click', () => {
+      ham.classList.remove('open');
+      mob.classList.remove('open');
+    });
+  });
 
-const answers = {};
-let userEmail = '';
-let userName = '';
-const TOTAL = 9;
+  // SCROLL REVEAL
+  const revealEls = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), i * 80);
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+  revealEls.forEach(el => io.observe(el));
 
-// Gestion sélection options
-document.querySelectorAll('.qcm-opt').forEach(opt => {
-  opt.addEventListener('click', () => {
-    const q = opt.dataset.q;
-    const v = opt.dataset.v;
-    const isMulti = opt.closest('.qcm-options').classList.contains('multi');
-
-    if (isMulti) {
-      opt.classList.toggle('selected');
-      const sel = [...document.querySelectorAll(`#opts-${q} .qcm-opt.selected`)].map(o => o.dataset.v);
-      answers[`q${q}`] = sel;
-      const btn = document.getElementById(`next-${q}`);
-      if (btn) btn.disabled = sel.length === 0;
+  // NAV SCROLL EFFECT
+  const nav = document.querySelector('nav');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 60) {
+      nav.style.background = 'rgba(8,8,10,0.97)';
+      nav.style.borderBottom = '1px solid rgba(201,168,76,0.1)';
     } else {
-      document.querySelectorAll(`#opts-${q} .qcm-opt`).forEach(o => o.classList.remove('selected'));
-      opt.classList.add('selected');
-      answers[`q${q}`] = v;
-      const btn = document.getElementById(`next-${q}`);
-      if (btn) btn.disabled = false;
+      nav.style.background = '';
+      nav.style.borderBottom = '';
     }
   });
-});
 
-function showStep(id) {
-  document.querySelectorAll('.qcm-step').forEach(s => s.classList.remove('active'));
-  const el = document.getElementById(`step-${id}`);
-  if (el) { el.classList.add('active'); el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-}
-
-function startQCM() {
-  userEmail = document.getElementById('qEmailInput').value.trim();
-  userName  = document.getElementById('qNameInput').value.trim();
-  if (!userEmail || !userEmail.includes('@')) {
-    document.getElementById('qEmailInput').style.borderColor = '#f08070';
-    document.getElementById('qEmailInput').focus();
-    return;
+  // FORM
+  function handleSubmit(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    btn.textContent = 'Envoyé ✓';
+    btn.style.background = '#22c55e';
+    btn.style.color = '#fff';
+    setTimeout(() => {
+      btn.textContent = 'Envoyer la demande →';
+      btn.style.background = '';
+      btn.style.color = '';
+      e.target.reset();
+    }, 3000);
   }
-  document.getElementById('qEmailInput').style.borderColor = '';
-  showStep(1);
-}
 
-function nextStep(n) { showStep(n); }
-function prevStep(n) { showStep(n); }
-
-async function submitQCM() {
-  const openTxt = document.getElementById('openAnswer').value.trim();
-  answers['q9_open'] = openTxt;
-
-  const payload = {
-    email: userEmail,
-    name: userName || null,
-    q1_domaine: answers.q1 || null,
-    q2_difficulte: answers.q2 || null,
-    q3_technologies: Array.isArray(answers.q3) ? answers.q3.join(' | ') : (answers.q3 || null),
-    q4_priorite_ia: answers.q4 || null,
-    q5_acces: answers.q5 || null,
-    q6_surface: answers.q6 || null,
-    q7_durabilite: answers.q7 || null,
-    q8_modele_eco: answers.q8 || null,
-    q9_suggestion: openTxt || null,
-    source: 'technatura_site'
-  };
-
-  const btn = document.getElementById('submitQCM');
-  btn.disabled = true;
-  btn.textContent = 'Enregistrement…';
-
-  try {
-    // Vérification de sécurité pour éviter le plantage des animations si le CDN est manquant
-    if (typeof supabase === 'undefined') {
-      throw new Error("Le script CDN Supabase n'est pas chargé dans votre HTML.");
-    }
-
-    // Connexion via l'instance globale du CDN
-    const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    
-    // Insertion dans la table
-    const { error } = await db.from('qcm_agriculture').insert([payload]);
-    if (error) throw error;
-
-    showStep('merci');
-  } catch (err) {
-    console.error('Supabase error:', err);
-    btn.disabled = false;
-    btn.textContent = 'Réessayer →';
-    alert('Une erreur est survenue : ' + err.message);
-  }
-}
+  // SMOOTH SCROLLING
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
